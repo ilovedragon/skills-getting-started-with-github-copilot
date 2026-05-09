@@ -20,11 +20,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        let participantsHtml = '';
+        if (details.participants.length > 0) {
+          participantsHtml = `
+            <p><strong>Participants:</strong></p>
+            <ul>
+              ${details.participants.map(p => `<li>${p} <span class="delete-icon" data-activity="${name}" data-email="${p}">×</span></li>`).join('')}
+            </ul>
+          `;
+        }
+
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          ${participantsHtml}
         `;
 
         activitiesList.appendChild(activityCard);
@@ -40,6 +51,28 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error fetching activities:", error);
     }
   }
+
+  // Add event listener for delete icons
+  activitiesList.addEventListener('click', async (event) => {
+    if (event.target.classList.contains('delete-icon')) {
+      const activity = event.target.dataset.activity;
+      const email = event.target.dataset.email;
+      try {
+        const response = await fetch(`/activities/${encodeURIComponent(activity)}/signup?email=${encodeURIComponent(email)}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          fetchActivities(); // Refresh the list
+        } else {
+          const result = await response.json();
+          alert(result.detail || 'Failed to unregister');
+        }
+      } catch (error) {
+        alert('Failed to unregister. Please try again.');
+        console.error('Error unregistering:', error);
+      }
+    }
+  });
 
   // Handle form submission
   signupForm.addEventListener("submit", async (event) => {
